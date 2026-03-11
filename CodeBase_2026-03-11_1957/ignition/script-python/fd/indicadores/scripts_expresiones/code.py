@@ -1,0 +1,2 @@
+def obtienePorcentajeOcupacionViaPintura(id_via):
+	return fd.indicadores.estadisticas_via.EstadisticasViaPintura(id_via).calculaPorcentajeOcupacionViaPintura()

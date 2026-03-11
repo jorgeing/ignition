@@ -1,0 +1,7 @@
+{
+  "title": "CodeBase",
+  "description": "Código comun a todos los proyectos",
+  "enabled": true,
+  "inheritable": true,
+  "parent": ""
+}
