@@ -251,7 +251,7 @@ class EventoCompruebaOrdenPlatoPintado:
 
 		ids_colores = self._obtieneIdsColoresCompatibles()
 		datos_colores = []
-		if ids:
+		if ids_colores:
 			lista_id_colores = '(' + ','.join(str(id_color) for id_color in ids_colores) + ')'
 			lista_colores = fd.utilidades.sql.EjecutadorNamedQueriesConContexto('FactoryDB','CodeBase').ejecutaNamedQuery(
 				'FD/OrdenesProduccionScada/ObtieneListaColoresPorID', {'lista_id_colores': lista_id_colores}

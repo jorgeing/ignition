@@ -1,9 +1,7 @@
 class CronometroTareas:
-	
-	_lista_eventos = []
-	
+
 	def __init__(self):
-		self._lista_eventos=[]
+		self._lista_eventos = []
 		self.registraEvento("Inicio")
 		
 	def registraEvento(self, nombre_evento):

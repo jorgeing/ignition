@@ -1,4 +1,4 @@
-class inventarioRFID:
+class InventarioRFID:
 	
 	PREFIJO_ID_PLATO = '1'
 	PREFIJO_ID_MOLDE = '2'

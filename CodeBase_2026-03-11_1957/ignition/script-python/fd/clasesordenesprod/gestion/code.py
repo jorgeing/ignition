@@ -23,7 +23,7 @@ class GestorOrdenesProduccion:
 	@staticmethod
 	def obtieneOrdenProduccion(showertray_id):
 		ordenes_produccion = fd.utilidades.sql.EjecutadorNamedQueriesConContexto('FactoryDB', 'CodeBase').ejecutaNamedQuery('FD/OrdenesProduccionScada/ObtieneOrdenProduccionDeShowertray', {"showertray_id": showertray_id})
-		if ordenes_produccion.getRowCount != 0:
+		if ordenes_produccion.getRowCount() != 0:
 			return ordenes_produccion
 
 class GestorEliminarOrdenesProduccion:
@@ -108,9 +108,9 @@ class GestorPlanProduccion:
 		
 	def _obtieneOrdenesProduccionDeClavei(self):
 		cod_emp = fd.globales.ParametrosGlobales.obtieneCodEmp()
-		ordenes_produccion = db.ejecutaNamedQuery('FD/ConsultasClavei/ObtieneOrdenesProduccionAllLines', {"codemp":cod_emp})
+		ordenes_produccion = self._db.ejecutaNamedQuery('FD/ConsultasClavei/ObtieneOrdenesProduccionAllLines', {"codemp":cod_emp})
 		
-		if ordenes_produccion.getRowCount != 0:
+		if ordenes_produccion.getRowCount() != 0:
 			return ordenes_produccion
 		else:
 			raise Exception("_obtieneOrdenesProduccionDeClavei - No se ha encontrado ordenes de produccion en Clavei")
