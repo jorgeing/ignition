@@ -1,6 +1,7 @@
 import random
 
 class EventoAsignacionRFIDDentroDelPlato:
+	"""Gestiona la asignación de chips RFID al interior del plato durante el proceso de producción."""
 	
 	ANTENA_1_RFID = 'rfid_preasignado_1'
 	ANTENA_2_RFID = 'rfid_preasignado_2'
@@ -26,6 +27,7 @@ class EventoAsignacionRFIDDentroDelPlato:
 	_rssi = -99
 	
 	def __init__(self, info_tag, antena):
+		"""Inicializa con info del tag y número de antena."""
 		self._db = fd.utilidades.sql.EjecutadorNamedQueriesConContexto('FactoryDB', 'CodeBase')
 		self._logger = fd.utilidades.logger.LoggerFuncionesClase('trigger_antena_test')
 		self._info_tag = info_tag
@@ -36,6 +38,7 @@ class EventoAsignacionRFIDDentroDelPlato:
 		self._asignaQueAntenaMandaLaPeticion(antena)
 		
 	def guardaRFIDparaPlato(self):
+		"""Guarda/asigna el RFID al plato si es válido y diferente al anterior."""
 		if self._rfid_id_interior != '' and self._rfid_id_interior != None and self._rfid_id_interior != self._rfid_id_interior_anterior:
 			self._logger.logInfo("Intenta asignar - update: "+ self._rfid_id_interior+ ' - ' +str(self._info_tag['mold_id']))
 			asignado = self._asignaRFID()
@@ -46,10 +49,12 @@ class EventoAsignacionRFIDDentroDelPlato:
 			self.verificaLosChipsGuardados()
 			
 	def verificaLosChipsGuardados(self):
+		"""Verifica que los chips RFID almacenados sean coherentes."""
 		valores_rfid = self._obtieneRFIDGuardados()
 		self._compruebaSiSonIguales(valores_rfid)
 			
 	def _asignaQueAntenaMandaLaPeticion(self, antena):
+		"""Determina qué columnas usar según la antena activa."""
 		if antena == 1:
 			self._columna_rfid_id = self.ANTENA_1_RFID
 			self._columna_rssi = self.ANTENA_1_RSSI
@@ -76,12 +81,14 @@ class EventoAsignacionRFIDDentroDelPlato:
 			self._columna_t_stamp = self.ANTENA_1_TIEMPO
 		
 	def _reservaRFIDparaPlato(self):
+		"""Inserta un nuevo registro RFID para el plato."""
 		parametros = self._generaParametrosReserva()
 		print('_reservaRFIDparaPlato '+str(parametros))
 		self._logger.logInfo('_reservaRFIDparaPlato '+str(parametros))
 		self._db.ejecutaNamedQuery('FD/Platos/ReservaRFIDInternoAPlato', parametros)
 		
 	def _generaParametrosReserva(self):
+		"""Genera el diccionario de parámetros para la reserva."""
 		parametros= {
 			"columna_rfid_id": str(self._columna_rfid_id),
 			"columna_t_stamp": str(self._columna_t_stamp),
@@ -94,6 +101,7 @@ class EventoAsignacionRFIDDentroDelPlato:
 		return parametros
 	
 	def _asignaRFID(self):
+		"""Ejecuta la query de asignación de RFID al plato."""
 		parametros = self._generaParametrosAsignacion()
 		self._logger.logInfo('_asignaRFID '+str(parametros))
 		print('_asignaRFID '+str(parametros))
@@ -101,6 +109,7 @@ class EventoAsignacionRFIDDentroDelPlato:
 		return asignado
 		
 	def _generaParametrosAsignacion(self):
+		"""Genera el diccionario de parámetros para la asignación."""
 		parametros= {
 			"columna_rfid_id": str(self._columna_rfid_id),
 			"columna_t_stamp": str(self._columna_t_stamp),
@@ -113,9 +122,11 @@ class EventoAsignacionRFIDDentroDelPlato:
 		return parametros
 		
 	def _obtieneRFIDGuardados(self):
+		"""Obtiene los RFIDs preasignados desde la base de datos."""
 		return self._db.ejecutaNamedQuery('FD/Platos/ObtieneInformarcionRfidPreasignados', {"showertray_id": str(self._info_tag['showertray_id'])})
 		
 	def _compruebaSiSonIguales(self, valores_rfid):
+		"""Comprueba si hay chips duplicados y los consolida."""
 		rfid_1 = valores_rfid[0]['rfid_preasignado_1']
 		rfid_2 = valores_rfid[0]['rfid_preasignado_2']
 		rfid_3 = valores_rfid[0]['rfid_preasignado_3']
@@ -129,6 +140,7 @@ class EventoAsignacionRFIDDentroDelPlato:
 
 
 class ValidacionValorTag:
+	"""Valida si un valor de tag RFID es válido para ser asignado."""
 	
 	CONDICION_INICIO = 'E2801191'
 	#'E2801191'
@@ -137,10 +149,12 @@ class ValidacionValorTag:
 	_showertray_id = ''
 	
 	def __init__(self, epc_leido):
+		"""Inicializa con el EPC leído y limpia ceros iniciales."""
 		self._db = fd.utilidades.sql.EjecutadorNamedQueriesConContexto('FactoryDB', 'CodeBase')
 		self._epc_leido = self._eliminaCerosIniciales(epc_leido)
 		
 	def esRFIDValido2(self, showertray_id):
+		"""Verifica si el RFID existe en BD y no ha sido ya asignado."""
 		self._showertray_id = showertray_id
 		respuesta = False
 		if self.existeEnLaBBDD() and self._noHaSidoYaAsignado():
@@ -150,6 +164,7 @@ class ValidacionValorTag:
 		return respuesta
 		
 	def existeEnLaBBDD(self):
+		"""Comprueba si el EPC existe en la tabla de RFIDs autogenerados."""
 		existe = self._db.ejecutaNamedQuery('FD/Platos/RfidInteriorAutogenerado', {"id_hexadecimal": self._epc_leido})
 		if existe:
 			return True
@@ -157,13 +172,16 @@ class ValidacionValorTag:
 			return False
 		
 	def _eliminaCerosIniciales(self, epc_leido):
+		"""Elimina los ceros del inicio del EPC."""
 		return epc_leido.lstrip('0')
 		
 	def _convierteHexadecimalDecimal(self):
+		"""Convierte el EPC hexadecimal a decimal."""
 		id_decimal = fd.utilidades.transformaciones.ConversoresDecimalHexadecimal.convierteUuidHexadecimalEnDecimal(self._epc_leido)
 		return id_decimal.lstrip('0')
 		
 	def _noHaSidoYaAsignado(self):
+		"""Verifica que el chip no haya sido ya asignado a otro plato."""
 		existe = self._db.ejecutaNamedQuery('FD/Platos/CompruebaSiYaExisteChip', {"rfid_id_interior": self._epc_leido, "showertray_id": self._showertray_id})
 		if len(existe) == 0:
 			return True
@@ -174,6 +192,7 @@ class ValidacionValorTag:
 		
 	#BORRAR TRAS PRUEBAS
 	def esRFIDValido(self):
+		"""Valida el RFID (método antiguo, pendiente de borrar)."""
 		respuesta = False
 		if self._formatoEpcCorrecto() and self._esConsistente() and self._validacionCRC() and self._esChipUnico():
 			respuesta = True
@@ -182,17 +201,21 @@ class ValidacionValorTag:
 		return respuesta
 		
 	def _formatoEpcCorrecto(self):
+		"""Verifica que el EPC tenga 24 caracteres."""
 		if len(self._epc_leido) == 24:
 			return True
 		
 	def _esConsistente(self):
+		"""Verifica que el EPC empiece con el prefijo esperado."""
 		if self._epc_leido[0:8] == self.CONDICION_INICIO:
 			return True
 			
 	def _validacionCRC(self):
+		"""Realiza validación CRC (actualmente siempre True)."""
 		return True
 		
 	def _esChipUnico(self):
+		"""Verifica que el chip no exista ya en la BD."""
 		existe = self._db.ejecutaNamedQuery('FD/Platos/CompruebaSiYaExisteChip', {"rfid_id_interior": self._epc_leido, "showertray_id": self._showertray_id})
 		print(str(existe))
 		if len(existe) == 0:
@@ -200,9 +223,11 @@ class ValidacionValorTag:
 			
 
 class AsignadorRFIDInterior:
+	"""Asignador estático de RFID interior al plato."""
 	
 	@staticmethod
 	def asignaSiValido(path, showertray_id):
+		"""Lee el tag y devuelve el EPC si es válido y tiene buen RSSI."""
 		try:
 			tag = fd.utilidades.tags.GestorTags.leeValorDeUnTag(path)
 			print('tag: '+str(tag))
@@ -224,6 +249,7 @@ class AsignadorRFIDInterior:
 				
 	@staticmethod
 	def siValidoGuardaRssi(path, showertray_id):
+		"""Lee el tag y devuelve el RSSI si es válido."""
 		try:
 			tag = fd.utilidades.tags.GestorTags.leeValorDeUnTag(path)
 			try:
@@ -248,27 +274,33 @@ class AsignadorRFIDInterior:
 	
 	@staticmethod
 	def compruebaRSSI(tag):
+		"""Verifica que el RSSI del tag supere el umbral mínimo."""
 		rssi = tag["labels"][0]["min_rssi"]
 		if rssi > -60:
 			return True
 
 
 class InformacionParaLaAntena:
+	"""Genera la respuesta JSON para la antena RFID."""
 	
 	TYPE_STRING = 'label'
 	_epc_leido = ''
 	
 	def __init__(self, epc_leido):
+		"""Inicializa con el EPC leído."""
 		self._epc_leido = epc_leido
 		
 	def generaJson(self):
+		"""Genera el JSON de respuesta con el EPC."""
 		return {'code':200,'message':'OK', 'IDHex':self._epc_leido, 'IDDec':self._epc_leido, 'type':self.TYPE_STRING}
 		
 		
 class GeneradorUID: #TEMPORAL PRUEBA
+	"""Generador temporal de UIDs para pruebas."""
 	
 	@staticmethod
 	def generaUID():
+		"""Genera un UID único basado en fecha y número aleatorio."""
 		fecha_actual = system.date.now()
 		lote = system.date.format(fecha_actual, 'ddMMyy')
 		numero_aleatorio = random.randint(10**26, 10**27 - 1)
@@ -280,6 +312,7 @@ class GeneradorUID: #TEMPORAL PRUEBA
 		
 	@staticmethod
 	def compruebaCRC(uiid):
+		"""Verifica el CRC de un UID generado."""
 		numero_serie = uiid[:34]
 		suma_numero_serie = int(numero_serie[0]) + int(numero_serie[1:7]) + int(numero_serie[7:])
 		crc = uiid[34:]
@@ -291,6 +324,7 @@ class GeneradorUID: #TEMPORAL PRUEBA
 
 #Final para generar codificación
 class GeneradorCodificacionRfid:
+	"""Genera codificaciones RFID únicas e inserta en BD."""
 	
 	_IDENTIFICADOR_INICIAL = 8
 	
@@ -305,6 +339,7 @@ class GeneradorCodificacionRfid:
 	
 	
 	def __init__(self, cantidad):
+		"""Inicializa generando el lote y la secuencia numérica."""
 		self._db = fd.utilidades.sql.EjecutadorNamedQueriesConContexto('FactoryDB', 'CodeBase')
 		self._cantidad_uuid = cantidad
 		self._lote = self._obtieneLote()
@@ -314,6 +349,7 @@ class GeneradorCodificacionRfid:
 		
 		
 	def generaUuidUnico(self):
+		"""Genera UUIDs únicos en decimal y hexadecimal y los inserta en BD."""
 		uuid_semielaborado = self._generaNumeroIntermedio()
 		lista_crc = self._generaCRC()
 		
@@ -333,6 +369,7 @@ class GeneradorCodificacionRfid:
 		
 	@staticmethod
 	def sumaUnoAleatoriamente(lista_uuids):
+		"""Suma uno aleatoriamente a un dígito del UUID y verifica el CRC."""
 		for uuid in lista_uuids:
 			numero_serie = list(uuid[:14])
 			crc_original = list(uuid[14:])
@@ -352,11 +389,13 @@ class GeneradorCodificacionRfid:
 		
 		
 	def _obtieneLote(self):
+		"""Obtiene el identificador de lote a partir de la fecha actual."""
 		fecha_actual = system.date.now()
 		return system.date.format(fecha_actual, 'yyMMdd')
 		
 		
 	def _compruebaSiLoteYaEstaCreado(self):
+		"""Obtiene el índice mayor del lote en BD para continuar la secuencia."""
 		indice_mayor = self._db.ejecutaNamedQuery('FD/Rfid/CompruebaSiExisteLote', {"lote": self._lote})
 		if len(indice_mayor) > 0:
 			return indice_mayor[0][0]
@@ -365,23 +404,28 @@ class GeneradorCodificacionRfid:
 			
 			
 	def _generaSecuenciaNumerica(self):
+		"""Genera una secuencia de índices consecutivos."""
 		return [int(self._indice_mayor) + 1 + i for i in range(self._cantidad_uuid)]
 		
 		
 	def _rellenaConZeros(self):
+		"""Rellena los números con ceros hasta 7 dígitos."""
 		return [str(numero).zfill(7) for numero in self._secuencia_numerica]
 		
 		
 	def _generaNumeroIntermedio(self):
+		"""Genera el número intermedio base del UUID."""
 		self._lista_suma_numeros_intermedios = [int(self._IDENTIFICADOR_INICIAL)+int(self._lote)+ int(numero) for numero in self._secuencia_numerica]
 		return [str(self._IDENTIFICADOR_INICIAL)+str(self._lote)+ numero for numero in self._secuencia_numerica]
 		
 		
 	def _generaCRC(self):
+		"""Calcula el CRC para cada elemento de la secuencia."""
 		return [int(secuencia)%10000 for secuencia in self._lista_suma_numeros_intermedios]
 		
 		
 	def _transformaUuidListaEnHExadecimal(self):
+		"""Convierte la lista de UUIDs decimales a hexadecimal."""
 		resultados = []
 		conversor_hexadecimal = fd.utilidades.transformaciones.ConversoresDecimalHexadecimal
 		
@@ -393,12 +437,14 @@ class GeneradorCodificacionRfid:
 		
 		
 	def _obtieneListaLote(self):
+		"""Genera una lista con el lote repetido para cada UUID."""
 		lista_lote = []
 		for fila in range(self._cantidad_uuid):
 			lista_lote.append(self._lote)
 		return lista_lote
 		
 	def _obtieneListaSerie(self):
+		"""Genera una lista con los índices de serie para cada UUID."""
 		lista_serie = []
 		if self._indice_mayor > 0:
 			serie = self._indice_mayor + 1
@@ -411,6 +457,7 @@ class GeneradorCodificacionRfid:
 		return lista_serie
 		
 	def _obtieneListaTimeStamp(self):
+		"""Genera una lista con el timestamp actual para cada UUID."""
 		lista_tstamp = []
 		hoy = system.date.now()
 		for fila in range(self._cantidad_uuid):
@@ -418,6 +465,7 @@ class GeneradorCodificacionRfid:
 		return lista_tstamp
 		
 	def _juntaListasParaInsertar(self):
+		"""Combina todas las listas en una lista final para insertar."""
 		lista_final = []
 		fila_total = []
 		lista_lote = self._obtieneListaLote()
@@ -433,12 +481,14 @@ class GeneradorCodificacionRfid:
 		
 		
 	def _convierteEnDataset(self, lista_final):
+		"""Convierte la lista final en un dataset de Ignition."""
 		cabecera = ["id_dec", "id_hex", "lote", "indice_serie", "t_stamp"]
 		dataset = system.dataset.toDataSet(cabecera, lista_final)
 		return dataset
 		
 		
 	def _insertaEnBaseDatos(self, dataset_lista_final):
+		"""Inserta el dataset en la base de datos."""
 		string_valores_a_insertar = self._mapeoColumnas(dataset_lista_final)
 		
 		params = {'values': string_valores_a_insertar}
@@ -446,6 +496,7 @@ class GeneradorCodificacionRfid:
 		
 		
 	def _mapeoColumnas(self, dataset):
+		"""Genera el string SQL de valores para inserción masiva."""
 		pydataset = system.dataset.toPyDataSet(dataset)
 		constructor_sql = fd.utilidades.sql.ConstructorSQL
 		
