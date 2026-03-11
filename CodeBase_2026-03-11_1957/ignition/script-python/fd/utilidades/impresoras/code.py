@@ -1,34 +1,28 @@
 class InformacionImpresoras:
-	
+
 	_printer_id = 0
-	
+	_info = None
+
 	def __init__(self, printer_id):
 		self._db = fd.utilidades.sql.EjecutadorNamedQueriesConContexto('FactoryDB', 'CodeBase')
 		self._printer_id = printer_id
-	
+		self._info = self._cargaInfo()
+
+	def _cargaInfo(self):
+		try:
+			resultado = self._db.ejecutaNamedQuery('FD/Etiquetas/ObtieneInformacionImpresora', {"printer_id": self._printer_id})
+			return resultado[0]
+		except Exception as e:
+			raise Exception('No se ha podido obtener informacion de la impresora: ' + str(e))
+
 	def obtieneNombreImpresora(self):
-		nombre_impresora = ''
-		try:
-			nombre_impresora = self._db.ejecutaNamedQuery('FD/Etiquetas/ObtieneInformacionImpresora', {"printer_id": self._printer_id})
-		except Exception as e:
-			raise Exception('No se ha podido obtener informacion de la impresora: ' + str(e))
-		return nombre_impresora[0]["printer_name"]
-		
+		return self._info["printer_name"]
+
 	def obtieneServidorImpresion(self):
-		servidor = ''
-		try:
-			servidor = self._db.ejecutaNamedQuery('FD/Etiquetas/ObtieneInformacionImpresora', {"printer_id": self._printer_id})
-		except Exception as e:
-			raise Exception('No se ha podido obtener informacion de la impresora: ' + str(e))
-		return servidor[0]["printer_server"]
-		
+		return self._info["printer_server"]
+
 	def obtieneNombreImpresoraA4(self):
-		impresora_a4 = ''
-		try:
-			nombre_impresora = self._db.ejecutaNamedQuery('FD/Etiquetas/ObtieneInformacionImpresora', {"printer_id": self._printer_id})
-		except Exception as e:
-			raise Exception('No se ha podido obtener informacion de la impresora: ' + str(e))
-		return nombre_impresora[0]["printer_a4"]
+		return self._info["printer_a4"]
 
 
 class InformacionPorNombreImpresoras:
