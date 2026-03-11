@@ -1,10 +1,14 @@
 class CorrectorClientes:
+	"""Corrige el cliente genérico asignando el cliente real según el modelo del plato."""
+
 	_cliente = 99999
 	
 	def __init__(self, modelo):
+		"""Inicializa con el modelo del plato."""
 		self._modelo = modelo
 	
 	def corrigeClienteGenerico(self):
+		"""Devuelve el ID de cliente correcto según el modelo."""
 		if self._modelo == 'REM':
 			self._cliente = 4308
 		elif self._modelo == 'PIR':
