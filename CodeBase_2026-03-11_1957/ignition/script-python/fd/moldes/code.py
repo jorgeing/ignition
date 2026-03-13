@@ -48,6 +48,22 @@ class Molde:
 		return self._informacion["last_detected_tag_count"]
 	
 	def obtieneSKUModelo(self):
+		"""
+		Obtiene el identificador de modelo y los datos de SKU asociados al molde actual.
+
+		Extrae el ID de modelo a partir de los caracteres 29-31 del identificador
+		del molde (_mold_id) y lo busca en el dataset de modelos en caché. Con los
+		datos encontrados construye el SKU completo del molde concatenando el nombre
+		de SKU del modelo con los sufijos de posición 32-34 y 35 en adelante del
+		identificador del molde.
+
+		Returns:
+			tuple: Tupla con cuatro elementos:
+				- id_modelo (int): Identificador numérico del modelo.
+				- nombre_sku (str): Nombre corto de SKU del modelo. Cadena vacía si no se encuentra.
+				- nombre_largo_modelo (str): Nombre largo descriptivo del modelo. Cadena vacía si no se encuentra.
+				- sku_molde (str): SKU completo del molde, formado por nombre_sku + sufijos del _mold_id.
+		"""
 		modelos_cache = self._obtieneDatasetModelosCache()
 		id_modelo = int(self._mold_id[29:32])
 		nombre_sku = ''
